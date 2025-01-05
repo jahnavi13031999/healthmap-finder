@@ -2,22 +2,45 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from 'react-router-dom';
+import { useToast } from "@/components/ui/use-toast";
 
 export const SearchForm = () => {
   const [location, setLocation] = useState('');
   const [healthIssue, setHealthIssue] = useState('');
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!location || !healthIssue) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
     navigate('/results', { state: { location, healthIssue } });
   };
 
   const handleGeolocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
+          toast({
+            title: "Location detected",
+            description: "Your location has been automatically filled",
+          });
+        },
+        (error) => {
+          toast({
+            title: "Location Error",
+            description: "Could not detect your location",
+            variant: "destructive",
+          });
+        }
+      );
     }
   };
 

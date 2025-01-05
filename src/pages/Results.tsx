@@ -1,34 +1,42 @@
 import { useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { HospitalCard } from '@/components/HospitalCard';
+import { searchHospitals, type Hospital } from '@/services/api';
+import { useToast } from "@/components/ui/use-toast";
 
 const Results = () => {
   const location = useLocation();
   const { location: userLocation, healthIssue } = location.state || {};
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Mock data - in a real app, this would come from your ML API
-  const hospitals = [
-    {
-      name: "Central Medical Center",
-      rating: 4.8,
-      specialty: "General Medicine",
-      distance: "2.3 miles",
-      address: "123 Healthcare Ave"
-    },
-    {
-      name: "St. Mary's Hospital",
-      rating: 4.6,
-      specialty: "Specialized Care",
-      distance: "3.1 miles",
-      address: "456 Medical Blvd"
-    },
-    {
-      name: "City General Hospital",
-      rating: 4.5,
-      specialty: "Emergency Care",
-      distance: "4.0 miles",
-      address: "789 Hospital Street"
-    }
-  ];
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const results = await searchHospitals(userLocation, healthIssue);
+        setHospitals(results);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch hospital recommendations",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHospitals();
+  }, [userLocation, healthIssue, toast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">Loading recommendations...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
