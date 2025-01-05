@@ -18,21 +18,39 @@ export interface Patient {
   location: string;
 }
 
+// Mock data for development
+const mockHospitals: Hospital[] = [
+  {
+    id: '1',
+    name: 'General Hospital',
+    rating: 4.5,
+    specialty: 'General Medicine',
+    distance: '2.5 miles',
+    address: '123 Healthcare Ave, Medical District'
+  },
+  {
+    id: '2',
+    name: 'City Medical Center',
+    rating: 4.8,
+    specialty: 'Emergency Care',
+    distance: '3.1 miles',
+    address: '456 Wellness Blvd, Downtown'
+  },
+  {
+    id: '3',
+    name: 'Community Health Hospital',
+    rating: 4.2,
+    specialty: 'Family Medicine',
+    distance: '1.8 miles',
+    address: '789 Care Street, Uptown'
+  }
+];
+
 // Hospital-related API calls
 export const searchHospitals = async (location: string, healthIssue: string): Promise<Hospital[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/hospitals/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ location, healthIssue }),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('Error searching hospitals:', error);
-    return [];
-  }
+  // Return mock data for now
+  console.log('Searching hospitals for:', { location, healthIssue });
+  return Promise.resolve(mockHospitals);
 };
 
 // Patient-related API calls
