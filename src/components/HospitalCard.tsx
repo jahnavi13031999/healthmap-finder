@@ -1,3 +1,5 @@
+import { AppointmentDialog } from "./AppointmentDialog";
+
 interface HospitalCardProps {
   name: string;
   rating: number;
@@ -23,6 +25,9 @@ export const HospitalCard = ({ name, rating, specialty, distance, address }: Hos
         <p className="text-sm text-gray-500">
           <span className="font-medium">Address:</span> {address}
         </p>
+      </div>
+      <div className="mt-4">
+        <AppointmentDialog hospitalName={name} />
       </div>
     </div>
   );
