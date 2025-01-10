@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LocationDetails } from '@/constants';
 
 interface Location {
   id: string;
@@ -20,28 +21,25 @@ export const useLocations = () => {
 
     setIsLoading(true);
     try {
-      // Simulated API call - replace with actual API integration
-      const response = await new Promise<Location[]>((resolve) => {
-        setTimeout(() => {
-          resolve([
-            {
-              id: '1',
-              city: 'New York',
-              state: 'NY',
-              county: 'New York',
-              displayString: 'New York, NY'
-            },
-            {
-              id: '2',
-              city: 'Los Angeles',
-              state: 'CA',
-              county: 'Los Angeles',
-              displayString: 'Los Angeles, CA'
-            }
-          ]);
-        }, 1000);
-      });
-      setLocations(response);
+      // For now, using mock data. Later we'll integrate with OpenCage/Nominatim
+      const mockLocations: Location[] = [
+        {
+          id: '1',
+          city: 'New York',
+          state: 'NY',
+          county: 'New York',
+          displayString: 'New York, NY'
+        },
+        {
+          id: '2',
+          city: 'Los Angeles',
+          state: 'CA',
+          county: 'Los Angeles',
+          displayString: 'Los Angeles, CA'
+        }
+      ];
+      
+      setLocations(mockLocations);
     } catch (error) {
       console.error('Error searching locations:', error);
       setLocations([]);

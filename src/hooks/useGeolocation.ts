@@ -1,4 +1,4 @@
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 export const useGeolocation = () => {
   const { toast } = useToast();
@@ -18,8 +18,8 @@ export const useGeolocation = () => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
-            // Simulated reverse geocoding - replace with actual API call
-            const location = "New York, NY"; // Placeholder
+            // For now, returning a mock location. Later we'll integrate with reverse geocoding
+            const location = "New York, NY";
             resolve(location);
           } catch (error) {
             toast({
