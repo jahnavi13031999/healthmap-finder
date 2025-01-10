@@ -88,26 +88,28 @@ export const SearchForm = () => {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <div className="flex items-center border-b px-3">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <PopoverContent className="w-[calc(100%-2rem)] p-0 shadow-lg border-2 bg-white rounded-lg" align="start">
+                <Command className="rounded-lg">
+                  <div className="flex items-center border-b px-3 bg-gray-50">
+                    <Search className="mr-2 h-4 w-4 shrink-0 text-gray-500" />
                     <input
                       placeholder="Search cities..."
                       value={locationSearch}
                       onChange={(e) => handleLocationSearch(e.target.value)}
-                      className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-gray-400 focus:ring-0"
                     />
                   </div>
-                  <CommandList>
+                  <CommandList className="max-h-[300px] overflow-auto p-2">
                     {isLoading ? (
                       <div className="flex items-center justify-center p-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                       </div>
                     ) : locations.length === 0 ? (
-                      <CommandEmpty>No locations found.</CommandEmpty>
+                      <CommandEmpty className="py-6 text-center text-sm text-gray-500">
+                        No locations found.
+                      </CommandEmpty>
                     ) : (
-                      <CommandGroup>
+                      <CommandGroup className="space-y-1">
                         {locations.map((loc) => (
                           <CommandItem
                             key={loc.id}
@@ -115,10 +117,11 @@ export const SearchForm = () => {
                               setLocation(loc.displayString);
                               setOpen(false);
                             }}
+                            className="flex items-center px-4 py-3 rounded-md hover:bg-gray-100 cursor-pointer transition-colors"
                           >
                             <div className="flex flex-col">
-                              <span>{loc.city}, {loc.state}</span>
-                              <span className="text-sm text-muted-foreground">
+                              <span className="font-medium text-gray-900">{loc.city}, {loc.state}</span>
+                              <span className="text-sm text-gray-500">
                                 {loc.county} County
                               </span>
                             </div>
