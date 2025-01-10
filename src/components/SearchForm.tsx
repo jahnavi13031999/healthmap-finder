@@ -57,18 +57,31 @@ export const SearchForm = () => {
   };
 
   return (
-    <form className="space-y-8 w-full max-w-md bg-white p-6 rounded-lg shadow-lg" onSubmit={handleSubmit}>
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Find Healthcare Near You</h2>
+    <form 
+      onSubmit={handleSubmit} 
+      className="space-y-8 w-full max-w-md bg-gradient-to-b from-white to-gray-50 p-8 rounded-xl shadow-xl border border-gray-100"
+    >
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">
+            Find Healthcare Near You
+          </h2>
+          <p className="text-gray-600 text-sm">
+            Enter your location and health concern to get personalized hospital recommendations
+          </p>
+        </div>
         
-        <div className="relative">
+        <div className="relative space-y-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Your Location
+          </label>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-full justify-between border-2 hover:border-primary"
+                className="w-full justify-between border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white"
               >
                 {location || "Select your location..."}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -120,24 +133,30 @@ export const SearchForm = () => {
           <button
             type="button"
             onClick={handleGeolocation}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary transition-colors"
+            className="absolute right-3 top-[42px] p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100"
             title="Use current location"
           >
-            <MapPin className="w-5 h-4" />
+            <MapPin className="w-5 h-5" />
           </button>
         </div>
       </div>
       
       <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Medical Condition</label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Medical Condition
+          </label>
           <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-            <SelectTrigger className="w-full border-2 hover:border-primary">
+            <SelectTrigger className="w-full border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white">
               <SelectValue placeholder="Choose your condition" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
               {HEALTH_CONDITIONS.map((condition) => (
-                <SelectItem key={condition.value} value={condition.value}>
+                <SelectItem
+                  key={condition.value}
+                  value={condition.value}
+                  className="cursor-pointer hover:bg-gray-50"
+                >
                   {condition.label}
                 </SelectItem>
               ))}
@@ -145,20 +164,22 @@ export const SearchForm = () => {
           </Select>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details</label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Additional Details
+          </label>
           <Input
             placeholder="Describe your symptoms or concerns (optional)"
             value={healthIssue}
             onChange={(e) => setHealthIssue(e.target.value)}
-            className="border-2 hover:border-primary"
+            className="border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white"
           />
         </div>
       </div>
 
       <Button 
         type="submit" 
-        className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-lg font-semibold shadow-md"
+        className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-lg font-semibold shadow-md transition-colors"
         disabled={!location || (!healthIssue && !selectedCondition)}
       >
         <Search className="w-5 h-5 mr-2" />
