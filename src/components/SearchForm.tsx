@@ -71,73 +71,74 @@ export const SearchForm = () => {
           </p>
         </div>
         
-        <div className="relative space-y-2">
+        <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Your Location
           </label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-full justify-between border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white"
-              >
-                {location || "Select your location..."}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
-              <Command>
-                <div className="flex items-center border-b px-3">
-                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                  <input
-                    placeholder="Search cities..."
-                    value={locationSearch}
-                    onChange={(e) => handleLocationSearch(e.target.value)}
-                    className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                </div>
-                <CommandList>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center p-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                    </div>
-                  ) : locations.length === 0 ? (
-                    <CommandEmpty>No locations found.</CommandEmpty>
-                  ) : (
-                    <CommandGroup>
-                      {locations.map((loc) => (
-                        <CommandItem
-                          key={loc.id}
-                          onSelect={() => {
-                            setLocation(loc.displayString);
-                            setOpen(false);
-                          }}
-                        >
-                          <div className="flex flex-col">
-                            <span>{loc.city}, {loc.state}</span>
-                            <span className="text-sm text-muted-foreground">
-                              {loc.county} County
-                            </span>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  )}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          
-          <button
-            type="button"
-            onClick={handleGeolocation}
-            className="absolute right-3 top-[42px] p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100"
-            title="Use current location"
-          >
-            <MapPin className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white pr-12"
+                >
+                  {location || "Select your location..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <div className="flex items-center border-b px-3">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <input
+                      placeholder="Search cities..."
+                      value={locationSearch}
+                      onChange={(e) => handleLocationSearch(e.target.value)}
+                      className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                  </div>
+                  <CommandList>
+                    {isLoading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : locations.length === 0 ? (
+                      <CommandEmpty>No locations found.</CommandEmpty>
+                    ) : (
+                      <CommandGroup>
+                        {locations.map((loc) => (
+                          <CommandItem
+                            key={loc.id}
+                            onSelect={() => {
+                              setLocation(loc.displayString);
+                              setOpen(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span>{loc.city}, {loc.state}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {loc.county} County
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <button
+              type="button"
+              onClick={handleGeolocation}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100"
+              title="Use current location"
+            >
+              <MapPin className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
       
