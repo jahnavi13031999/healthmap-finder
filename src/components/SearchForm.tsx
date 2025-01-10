@@ -1,130 +1,168 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const healthConditions = [
-  { value: "hip_knee", label: "Hip/Knee Replacement Complications" },
-  { value: "heart_attack", label: "Heart Attack" },
-  { value: "cabg", label: "CABG Surgery" },
-  { value: "copd", label: "COPD" },
-  { value: "heart_failure", label: "Heart Failure" },
-  { value: "pneumonia", label: "Pneumonia" },
-  { value: "stroke", label: "Stroke" },
-  { value: "pressure_ulcer", label: "Pressure Ulcers" },
-  { value: "surgical_complications", label: "Surgical Complications" },
-  { value: "pneumothorax", label: "Iatrogenic Pneumothorax" },
-  { value: "fall_fracture", label: "Fall-Associated Fractures" },
-  { value: "post_hemorrhage", label: "Postoperative Hemorrhage" },
-  { value: "kidney_failure", label: "Acute Kidney Injury" },
-  { value: "respiratory_failure", label: "Respiratory Failure" },
-  { value: "blood_clots", label: "Pulmonary Embolism/DVT" },
-  { value: "sepsis", label: "Postoperative Sepsis" },
-  { value: "wound_dehiscence", label: "Wound Complications" },
-  { value: "surgical_error", label: "Surgical Errors" },
-  { value: "patient_safety", label: "General Patient Safety Concerns" }
-];
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Check, ChevronsUpDown, MapPin, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { HEALTH_CONDITIONS } from '@/constants';
+import { useLocations } from '@/hooks/useLocations';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 export const SearchForm = () => {
   const [location, setLocation] = useState('');
   const [healthIssue, setHealthIssue] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
+  const [open, setOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+  
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { locations, isLoading, searchLocations } = useLocations();
+  const { getCurrentLocation } = useGeolocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location || (!healthIssue && !selectedCondition)) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: "Required Fields Missing",
+        description: "Please provide both location and health condition details",
         variant: "destructive",
       });
       return;
     }
+
     const finalHealthIssue = selectedCondition 
-      ? `${healthIssue} (${healthConditions.find(c => c.value === selectedCondition)?.label})`
+      ? `${healthIssue} (${HEALTH_CONDITIONS.find(c => c.value === selectedCondition)?.label})`
       : healthIssue;
     
     navigate('/results', { state: { location, healthIssue: finalHealthIssue } });
   };
 
-  const handleGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
-          toast({
-            title: "Location detected",
-            description: "Your location has been automatically filled",
-          });
-        },
-        (error) => {
-          toast({
-            title: "Location Error",
-            description: "Could not detect your location",
-            variant: "destructive",
-          });
-        }
-      );
+  const handleGeolocation = async () => {
+    try {
+      const currentLocation = await getCurrentLocation();
+      setLocation(currentLocation);
+    } catch (error) {
+      // Error is handled in the hook
     }
   };
 
+  const handleLocationSearch = (value: string) => {
+    setLocationSearch(value);
+    searchLocations(value);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-md">
+    <form className="space-y-8 w-full max-w-md bg-white p-6 rounded-lg shadow-lg" onSubmit={handleSubmit}>
       <div className="space-y-2">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Find Healthcare Near You</h2>
+        
         <div className="relative">
-          <Input
-            placeholder="Enter your location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="pr-10"
-          />
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between border-2 hover:border-primary"
+              >
+                {location || "Select your location..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <div className="flex items-center border-b px-3">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <input
+                    placeholder="Search cities..."
+                    value={locationSearch}
+                    onChange={(e) => handleLocationSearch(e.target.value)}
+                    className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <CommandList>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                    </div>
+                  ) : locations.length === 0 ? (
+                    <CommandEmpty>No locations found.</CommandEmpty>
+                  ) : (
+                    <CommandGroup>
+                      {locations.map((loc) => (
+                        <CommandItem
+                          key={loc.id}
+                          onSelect={() => {
+                            setLocation(loc.displayString);
+                            setOpen(false);
+                          }}
+                        >
+                          <div className="flex flex-col">
+                            <span>{loc.city}, {loc.state}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {loc.county} County
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          
           <button
             type="button"
             onClick={handleGeolocation}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary transition-colors"
+            title="Use current location"
           >
-            📍
+            <MapPin className="w-5 h-4" />
           </button>
         </div>
       </div>
       
-      <div className="space-y-4">
-        <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select your medical condition" />
-          </SelectTrigger>
-          <SelectContent>
-            {healthConditions.map((condition) => (
-              <SelectItem key={condition.value} value={condition.value}>
-                {condition.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Medical Condition</label>
+          <Select value={selectedCondition} onValueChange={setSelectedCondition}>
+            <SelectTrigger className="w-full border-2 hover:border-primary">
+              <SelectValue placeholder="Choose your condition" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              {HEALTH_CONDITIONS.map((condition) => (
+                <SelectItem key={condition.value} value={condition.value}>
+                  {condition.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         
-        <Input
-          placeholder="Additional details about your health issue (optional)"
-          value={healthIssue}
-          onChange={(e) => setHealthIssue(e.target.value)}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details</label>
+          <Input
+            placeholder="Describe your symptoms or concerns (optional)"
+            value={healthIssue}
+            onChange={(e) => setHealthIssue(e.target.value)}
+            className="border-2 hover:border-primary"
+          />
+        </div>
       </div>
 
       <Button 
         type="submit" 
-        className="w-full bg-primary hover:bg-primary/90 text-white"
+        className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-lg font-semibold shadow-md"
         disabled={!location || (!healthIssue && !selectedCondition)}
       >
-        Find Best Hospitals
+        <Search className="w-5 h-5 mr-2" />
+        Find Hospitals
       </Button>
     </form>
   );
