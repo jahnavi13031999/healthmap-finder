@@ -1,114 +1,86 @@
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Hospital } from '@/types';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { StarIcon, MapPinIcon, ClockIcon, ChartBarIcon } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { AppointmentDialog } from './AppointmentDialog';
 
-const PerformanceBadge = ({ level }: { level: string }) => {
-  const colors = {
-    'Excellent': 'bg-green-100 text-green-800',
-    'Good': 'bg-blue-100 text-blue-800',
-    'Fair': 'bg-yellow-100 text-yellow-800',
-    'Needs Improvement': 'bg-red-100 text-red-800',
-    'Unknown': 'bg-gray-100 text-gray-800'
-  };
-
-  return (
-    <span className={`px-2 py-1 rounded-full text-sm font-medium ${colors[level] || colors.Unknown}`}>
-      {level}
-    </span>
-  );
-};
-
-export function HospitalCard({ hospital }: { hospital: Hospital }) {
-  return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <CardHeader className="bg-white border-b pb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-semibold">{hospital.name}</h3>
-            <p className="text-sm text-gray-500 flex items-center gap-1">
-              <MapPinIcon className="w-4 h-4" />
-              {hospital.address}, {hospital.city}, {hospital.state} {hospital.zipCode}
-            </p>
-          </div>
-          <PerformanceBadge level={hospital.performanceLevel} />
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-4">
-        <div className="space-y-4">
-          {/* Ratings Section */}
-          <div className="flex gap-4">
-            {hospital.ratings.overall && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-1">
-                      <StarIcon className="w-5 h-5 text-yellow-400" />
-                      <span className="font-medium">{hospital.ratings.overall.toFixed(1)}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Overall Rating</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            
-            {hospital.score && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-1">
-                      <ChartBarIcon className="w-5 h-5 text-blue-500" />
-                      <span className="font-medium">{hospital.score.toFixed(0)}%</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Performance Score</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-
-          {/* Statistics Section */}
-          {hospital.statistics && (
-            <div className="text-sm space-y-2">
-              {hospital.statistics.nationalComparison && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {hospital.statistics.nationalComparison}
-                  </Badge>
-                </div>
-              )}
-              
-              {hospital.statistics.measurementPeriod?.start && (
-                <div className="flex items-center gap-1 text-gray-500">
-                  <ClockIcon className="w-4 h-4" />
-                  <span>
-                    Data from {hospital.statistics.measurementPeriod.start} 
-                    to {hospital.statistics.measurementPeriod.end}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Description */}
-          {hospital.description && (
-            <p className="text-sm text-gray-600 mt-2">
-              {hospital.description}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+interface HospitalCardProps {
+  hospital: Hospital;
+  className?: string;
 }
+
+export function HospitalCard({ hospital, className }: HospitalCardProps) {
+  const r5Score = hospital.score > 0 
+    ? Math.min(5, Math.round((hospital.score / 20) * 10) / 10)
+    : 0;
+
+  const metrics = [
+    { label: "Overall", value: hospital.ratings?.overall },
+    { label: "Safety", value: hospital.ratings?.safety },
+    { label: "Quality", value: hospital.ratings?.quality }
+  ];
+
+  return (
+    <div className={cn("rounded-lg border border-gray-200", className)}>
+      <div className="p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">{hospital.name}</h3>
+          <p className="text-gray-600 text-sm">
+            {hospital.address}, {hospital.city}, {hospital.state} {hospital.zipCode}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-500">R-5 Score</p>
+            <p className="text-lg font-bold text-primary">
+              {r5Score.toFixed(1)}
+            </p>
+          </div>
+          <div className="flex gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  "w-4 h-4",
+                  i < Math.floor(r5Score) 
+                    ? "text-yellow-400 fill-current" 
+                    : "text-gray-300"
+                )}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-gray-100">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="text-center">
+              <p className="text-sm text-gray-500">{metric.label}</p>
+              <p className="text-sm font-semibold">
+                {typeof metric.value === 'number' ? metric.value.toFixed(1) : 'N/A'}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-500">Performance</p>
+            <p className={cn(
+              "text-sm font-semibold",
+              {
+                'text-green-600': hospital.performanceLevel === 'Excellent',
+                'text-blue-600': hospital.performanceLevel === 'Good',
+                'text-yellow-600': hospital.performanceLevel === 'Fair',
+                'text-red-600': hospital.performanceLevel === 'Needs Improvement',
+                'text-gray-600': hospital.performanceLevel === 'Unknown'
+              }
+            )}>
+              {hospital.performanceLevel}
+            </p>
+          </div>
+          <AppointmentDialog hospitalName={hospital.name} />
+        </div>
+      </div>
+    </div>
+  );
+} 

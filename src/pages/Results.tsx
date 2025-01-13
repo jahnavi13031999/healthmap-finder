@@ -1,49 +1,62 @@
-import { useLocation } from 'react-router-dom';
-import { useHospitals } from '../hooks/useHospitals';
+import { useHospitals } from '@/hooks/useHospitals';
 import { HospitalCard } from '../components/HospitalCard';
-import { Loader2 } from 'lucide-react';
+import { HospitalMetrics } from '../components/HospitalMetrics';
+import { useState } from 'react';
+import { Hospital } from '@/types';
+
+type SortOption = 'distance' | 'score' | 'name';
 
 export default function Results() {
-  const location = useLocation();
-  const { location: searchLocation, healthIssue } = location.state || {};
-  const { hospitals, isLoading, error } = useHospitals(searchLocation, healthIssue);
+  const [sortBy, setSortBy] = useState<SortOption>('distance');
+  const { data: hospitals, isLoading, error } = useHospitals('', '0,0');
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
+  const sortHospitals = (hospitals: Hospital[]) => {
+    return [...hospitals].sort((a, b) => {
+      switch (sortBy) {
+        case 'distance':
+          return (a.distance || Infinity) - (b.distance || Infinity);
+        case 'score':
+          return b.score - a.score;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+  };
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500">Error: {error}</p>
-      </div>
-    );
-  }
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
-  if (!hospitals || hospitals.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>No hospitals found for your search criteria.</p>
-      </div>
-    );
-  }
+  const sortedHospitals = sortHospitals(hospitals);
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">
-          Hospitals near {searchLocation}
-          {healthIssue && <span className="text-gray-500"> for {healthIssue}</span>}
-        </h1>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {hospitals.map((hospital) => (
-            <HospitalCard key={hospital.id} hospital={hospital} />
-          ))}
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <HospitalMetrics hospitals={hospitals} />
+      </div>
+
+      <div className="mb-4 flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Healthcare Facilities</h2>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+          className="border rounded-md p-2"
+        >
+          <option value="distance">Sort by Distance</option>
+          <option value="score">Sort by Performance</option>
+          <option value="name">Sort by Name</option>
+        </select>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {sortedHospitals.map((hospital) => (
+          <HospitalCard
+            key={hospital.id}
+            hospital={hospital}
+            className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200"
+          />
+        ))}
       </div>
     </div>
   );

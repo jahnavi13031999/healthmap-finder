@@ -9,7 +9,8 @@ import { Check, ChevronsUpDown, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocations } from '@/hooks/useLocations';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { api } from '@/lib/api'; // Import api
+import { api } from '@/services/api';
+
 export const SearchForm = () => {
   const [location, setLocation] = useState('');
   const [healthIssue, setHealthIssue] = useState('');
@@ -18,6 +19,8 @@ export const SearchForm = () => {
   const [openConditionPopover, setOpenConditionPopover] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
   const [conditionSearch, setConditionSearch] = useState('');
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [isConditionsLoading, setIsConditionsLoading] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,10 +39,17 @@ export const SearchForm = () => {
     }
 
     const finalHealthIssue = selectedCondition
-      ? `${healthIssue} (${selectedCondition})`
+      ? healthIssue 
+        ? `${selectedCondition} - ${healthIssue}`
+        : selectedCondition
       : healthIssue;
 
-    navigate('/results', { state: { location, healthIssue: finalHealthIssue } });
+    navigate('/results', { 
+      state: { 
+        location, 
+        healthIssue: finalHealthIssue 
+      } 
+    });
   };
 
   const handleGeolocation = async () => {
@@ -59,6 +69,24 @@ export const SearchForm = () => {
   const handleConditionSearch = (value: string) => {
     setConditionSearch(value);
     searchConditions(value);
+  };
+
+  const searchConditions = async (searchTerm: string) => {
+    if (!searchTerm) {
+      setConditions([]);
+      return;
+    }
+    
+    setIsConditionsLoading(true);
+    try {
+      const results = await api.searchHealthConditions(searchTerm);
+      setConditions(results);
+    } catch (error) {
+      console.error('Error searching conditions:', error);
+      setConditions([]);
+    } finally {
+      setIsConditionsLoading(false);
+    }
   };
 
   return (
