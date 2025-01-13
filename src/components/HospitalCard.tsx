@@ -31,7 +31,7 @@ export function HospitalCard({ hospital, className }: HospitalCardProps) {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-500">R-5 Score</p>
+            <p className="text-sm font-medium text-gray-500">Score</p>
             <p className="text-lg font-bold text-primary">
               {r5Score.toFixed(1)}
             </p>

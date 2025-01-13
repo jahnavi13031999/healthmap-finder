@@ -1,21 +1,8 @@
+import { Hospital } from '@/types';
+export type { Hospital };
+
 // API endpoints configuration
 const API_BASE_URL = 'http://localhost:5000/api';
-
-interface Hospital {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  county: string;
-  score: number;
-  ratings: {
-    overall: number;
-    quality: number | null;
-    safety: number | null;
-  };
-}
 
 export const api = {
   async searchHospitals(location: string, healthIssue: string): Promise<Hospital[]> {
@@ -72,3 +59,6 @@ export const api = {
     }
   },
 };
+
+// Export the searchHospitals function directly
+export const searchHospitals = api.searchHospitals;
