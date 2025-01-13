@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { LocationDetails } from '@/constants';
+import { useToast } from "@/components/ui/use-toast";
+
+// Temporarily define API_BASE_URL here until config is set up
+const API_BASE_URL = 'http://localhost:5000/api';
 
 interface Location {
   id: string;
+  address: string;
   city: string;
   state: string;
+  zipCode: string;
   county: string;
   displayString: string;
 }
@@ -12,36 +17,40 @@ interface Location {
 export const useLocations = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const searchLocations = async (query: string) => {
-    if (!query) {
+    if (!query || query.length < 2) {
       setLocations([]);
       return;
     }
 
     setIsLoading(true);
     try {
-      // For now, using mock data. Later we'll integrate with OpenCage/Nominatim
-      const mockLocations: Location[] = [
+      const response = await fetch(
+        `${API_BASE_URL}/locations/search?query=${encodeURIComponent(query.trim())}&field=City`,
         {
-          id: '1',
-          city: 'New York',
-          state: 'NY',
-          county: 'New York',
-          displayString: 'New York, NY'
-        },
-        {
-          id: '2',
-          city: 'Los Angeles',
-          state: 'CA',
-          county: 'Los Angeles',
-          displayString: 'Los Angeles, CA'
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
         }
-      ];
-      
-      setLocations(mockLocations);
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || 'Failed to fetch locations');
+      }
+
+      const data = await response.json();
+      setLocations(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching locations:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch locations. Please try again.",
+        variant: "destructive",
+      });
       setLocations([]);
     } finally {
       setIsLoading(false);

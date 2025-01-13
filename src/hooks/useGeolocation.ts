@@ -1,5 +1,8 @@
 import { useToast } from "@/components/ui/use-toast";
 
+// Temporarily define API_BASE_URL here until config is set up
+const API_BASE_URL = 'http://localhost:5000/api';
+
 export const useGeolocation = () => {
   const { toast } = useToast();
 
@@ -18,9 +21,16 @@ export const useGeolocation = () => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
-            // For now, returning a mock location. Later we'll integrate with reverse geocoding
-            const location = "New York, NY";
-            resolve(location);
+            // For now, using a default location until reverse geocoding is implemented
+            const defaultLocation = "New York, NY";
+            resolve(defaultLocation);
+            
+            // TODO: Implement reverse geocoding with the Flask API
+            // const response = await fetch(
+            //   `${API_BASE_URL}/locations/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+            // );
+            // const data = await response.json();
+            // resolve(data.displayString);
           } catch (error) {
             toast({
               title: "Error",

@@ -3,22 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, ChevronsUpDown, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { HEALTH_CONDITIONS } from '@/constants';
 import { useLocations } from '@/hooks/useLocations';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { api } from '@/services/api';
 
 export const SearchForm = () => {
   const [location, setLocation] = useState('');
   const [healthIssue, setHealthIssue] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
-  const [open, setOpen] = useState(false);
+  const [openLocationPopover, setOpenLocationPopover] = useState(false);
+  const [openConditionPopover, setOpenConditionPopover] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
-  
+  const [conditionSearch, setConditionSearch] = useState('');
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [isConditionsLoading, setIsConditionsLoading] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { locations, isLoading, searchLocations } = useLocations();
@@ -35,11 +38,18 @@ export const SearchForm = () => {
       return;
     }
 
-    const finalHealthIssue = selectedCondition 
-      ? `${healthIssue} (${HEALTH_CONDITIONS.find(c => c.value === selectedCondition)?.label})`
+    const finalHealthIssue = selectedCondition
+      ? healthIssue 
+        ? `${selectedCondition} - ${healthIssue}`
+        : selectedCondition
       : healthIssue;
-    
-    navigate('/results', { state: { location, healthIssue: finalHealthIssue } });
+
+    navigate('/results', { 
+      state: { 
+        location, 
+        healthIssue: finalHealthIssue 
+      } 
+    });
   };
 
   const handleGeolocation = async () => {
@@ -56,9 +66,32 @@ export const SearchForm = () => {
     searchLocations(value);
   };
 
+  const handleConditionSearch = (value: string) => {
+    setConditionSearch(value);
+    searchConditions(value);
+  };
+
+  const searchConditions = async (searchTerm: string) => {
+    if (!searchTerm) {
+      setConditions([]);
+      return;
+    }
+    
+    setIsConditionsLoading(true);
+    try {
+      const results = await api.searchHealthConditions(searchTerm);
+      setConditions(results);
+    } catch (error) {
+      console.error('Error searching conditions:', error);
+      setConditions([]);
+    } finally {
+      setIsConditionsLoading(false);
+    }
+  };
+
   return (
-    <form 
-      onSubmit={handleSubmit} 
+    <form
+      onSubmit={handleSubmit}
       className="space-y-8 w-full max-w-md bg-gradient-to-b from-white to-gray-50 p-8 rounded-xl shadow-xl border border-gray-100"
     >
       <div className="space-y-6">
@@ -70,18 +103,19 @@ export const SearchForm = () => {
             Enter your location and health concern to get personalized hospital recommendations
           </p>
         </div>
-        
+
+        {/* Location Input Section */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Your Location
           </label>
           <div className="relative">
-            <Popover open={open} onOpenChange={setOpen}>
+            <Popover open={openLocationPopover} onOpenChange={setOpenLocationPopover}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={open}
+                  aria-expanded={openLocationPopover}
                   className="w-full justify-between border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white pr-12"
                 >
                   {location || "Select your location..."}
@@ -115,7 +149,7 @@ export const SearchForm = () => {
                             key={loc.id}
                             onSelect={() => {
                               setLocation(loc.displayString);
-                              setOpen(false);
+                              setOpenLocationPopover(false);
                             }}
                             className="flex items-center px-4 py-3 rounded-md hover:bg-gray-100 cursor-pointer transition-colors"
                           >
@@ -143,31 +177,69 @@ export const SearchForm = () => {
             </button>
           </div>
         </div>
-      </div>
-      
-      <div className="space-y-6">
+
+        {/* Health Condition Input Section */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Medical Condition
           </label>
-          <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-            <SelectTrigger className="w-full border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white">
-              <SelectValue placeholder="Choose your condition" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              {HEALTH_CONDITIONS.map((condition) => (
-                <SelectItem
-                  key={condition.value}
-                  value={condition.value}
-                  className="cursor-pointer hover:bg-gray-50"
+          <div className="relative">
+            <Popover open={openConditionPopover} onOpenChange={setOpenConditionPopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openConditionPopover}
+                  className="w-full justify-between border-2 hover:border-primary/50 focus:border-primary transition-colors bg-white pr-12"
                 >
-                  {condition.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                  {selectedCondition || "Choose your condition"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100%-2rem)] p-0 shadow-lg border-2 bg-white rounded-lg" align="start">
+                <Command className="rounded-lg">
+                  <div className="flex items-center border-b px-3 bg-gray-50">
+                    <Search className="mr-2 h-4 w-4 shrink-0 text-gray-500" />
+                    <input
+                      placeholder="Search conditions..."
+                      value={conditionSearch}
+                      onChange={(e) => handleConditionSearch(e.target.value)}
+                      className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-gray-400 focus:ring-0"
+                    />
+                  </div>
+                  <CommandList className="max-h-[300px] overflow-auto p-2">
+                    {isConditionsLoading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : conditions.length === 0 ? (
+                      <CommandEmpty className="py-6 text-center text-sm text-gray-500">
+                        No conditions found.
+                      </CommandEmpty>
+                    ) : (
+                      <CommandGroup className="space-y-1">
+                        {conditions.map((condition, index) => (
+                          <CommandItem
+                            key={index}
+                            onSelect={() => {
+                              setSelectedCondition(condition);
+                              setOpenConditionPopover(false);
+                            }}
+                            className="flex items-center px-4 py-3 rounded-md hover:bg-gray-100 cursor-pointer transition-colors"
+                          >
+                            {condition}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-        
+
+        {/* Additional Health Issue Details */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Additional Details
@@ -181,8 +253,8 @@ export const SearchForm = () => {
         </div>
       </div>
 
-      <Button 
-        type="submit" 
+      <Button
+        type="submit"
         className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-lg font-semibold shadow-md transition-colors"
         disabled={!location || (!healthIssue && !selectedCondition)}
       >
