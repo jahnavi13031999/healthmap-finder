@@ -1,25 +1,40 @@
 import { Hospital } from '@/types';
 export type { Hospital };
 
-// API endpoints configuration
-const API_BASE_URL = 'http://localhost:5000/api';
+// Determine the API base URL based on the environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const api = {
   async searchHospitals(location: string, healthIssue: string): Promise<Hospital[]> {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/hospitals/search?location=${encodeURIComponent(location)}&healthIssue=${encodeURIComponent(healthIssue)}`
+        `${API_BASE_URL}/hospitals/search?location=${encodeURIComponent(location)}&healthIssue=${encodeURIComponent(healthIssue)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          // Remove credentials mode as it's not needed for this public API
+          mode: 'cors'
+        }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch hospitals');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch hospitals' }));
+        throw new Error(errorData.error || 'Failed to fetch hospitals');
       }
 
       const data = await response.json();
+      
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format from server');
+      }
+
       return data;
     } catch (error) {
       console.error('Error fetching hospitals:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error('Failed to fetch hospitals');
     }
   },
 
