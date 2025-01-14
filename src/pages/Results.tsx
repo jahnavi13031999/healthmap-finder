@@ -87,12 +87,11 @@ const ResultsHeader = ({
   onResetFilter: (key: keyof FilterState) => void;
   onResetAll: () => void;
 }) => (
-  <div className="bg-white border-b sticky top-0 z-10">
-    <div className="container mx-auto px-4 py-4">
+  <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
+    <div className="container mx-auto px-4 py-6">
       <div className="flex flex-col space-y-4">
-        {/* Summary Line */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-gray-900">
             Found {totalHospitals} hospitals
             {healthIssue && <span className="text-gray-600"> for {healthIssue}</span>}
             {userLocation && <span className="text-gray-600"> near {userLocation}</span>}
@@ -100,46 +99,58 @@ const ResultsHeader = ({
           <Button
             variant="ghost"
             size="sm"
+            className="text-gray-600 hover:text-gray-900"
             onClick={onResetAll}
           >
             Reset all filters
           </Button>
         </div>
 
-        {/* Active Filters */}
         <div className="flex flex-wrap gap-2">
           {filters.location !== 'all' && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge 
+              variant="secondary" 
+              className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
               {FILTER_OPTIONS.location.find(opt => opt.value === filters.location)?.label}
               <X 
-                className="h-3 w-3 cursor-pointer" 
+                className="h-3 w-3 cursor-pointer ml-1" 
                 onClick={() => onResetFilter('location')}
               />
             </Badge>
           )}
           {filters.performance !== 'all' && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge 
+              variant="secondary" 
+              className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
               {FILTER_OPTIONS.performance.find(opt => opt.value === filters.performance)?.label}
               <X 
-                className="h-3 w-3 cursor-pointer" 
+                className="h-3 w-3 cursor-pointer ml-1" 
                 onClick={() => onResetFilter('performance')}
               />
             </Badge>
           )}
           {filters.sortBy !== 'rating' && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge 
+              variant="secondary" 
+              className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
               Sorted by: {FILTER_OPTIONS.sortBy.find(opt => opt.value === filters.sortBy)?.label}
               <X 
-                className="h-3 w-3 cursor-pointer" 
+                className="h-3 w-3 cursor-pointer ml-1" 
                 onClick={() => onResetFilter('sortBy')}
               />
             </Badge>
           )}
           {filters.onlyWithData && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge 
+              variant="secondary" 
+              className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
               With available data only
               <X 
-                className="h-3 w-3 cursor-pointer" 
+                className="h-3 w-3 cursor-pointer ml-1" 
                 onClick={() => onResetFilter('onlyWithData')}
               />
             </Badge>
@@ -503,14 +514,13 @@ const Results = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-semibold">Search Results</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">Search Results</h1>
           <Button 
             onClick={handleNewSearch}
-            className="flex items-center gap-2"
-            variant="outline"
+            className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
           >
             <Search className="h-4 w-4" />
             New Search
@@ -527,8 +537,7 @@ const Results = () => {
         />
         
         <div className="container mx-auto px-4 py-8 space-y-8">
-          {/* Filters section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-white p-6 rounded-lg shadow-sm">
             {renderSelect({
               label: "Location",
               value: filters.location,
@@ -549,11 +558,10 @@ const Results = () => {
             })}
           </div>
 
-          {/* Hospitals Display */}
           <div className="space-y-8">
             {filteredHospitals.cityHospitals.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-2xl font-semibold text-gray-900">
+                <h2 className="text-2xl font-semibold text-gray-900 px-2">
                   Hospitals in {userLocation}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -566,7 +574,7 @@ const Results = () => {
 
             {filteredHospitals.stateHospitals.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-2xl font-semibold text-gray-900">
+                <h2 className="text-2xl font-semibold text-gray-900 px-2">
                   Other Hospitals in {userLocation.split(',')[1]}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -579,7 +587,7 @@ const Results = () => {
 
             {filteredHospitals.otherHospitals.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-2xl font-semibold text-gray-900">
+                <h2 className="text-2xl font-semibold text-gray-900 px-2">
                   Other Recommended Hospitals
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -593,14 +601,13 @@ const Results = () => {
             {!filteredHospitals.cityHospitals.length && 
              !filteredHospitals.stateHospitals.length && 
              !filteredHospitals.otherHospitals.length && (
-              <div className="text-center py-12">
+              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                 <p className="text-gray-500 text-lg">
                   No hospitals found matching your criteria. Try adjusting your filters.
                 </p>
               </div>
             )}
 
-            {/* Pagination Controls */}
             {totalHospitals > 0 && (
               <div className="flex justify-center py-8">
                 <Pagination
@@ -612,7 +619,6 @@ const Results = () => {
               </div>
             )}
 
-            {/* Loading State */}
             {isLoadingMore && (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
