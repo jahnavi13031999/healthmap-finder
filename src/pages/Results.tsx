@@ -15,12 +15,15 @@ import { debounce } from 'lodash';
 const HOSPITALS_PER_PAGE = 9;
 
 const Results = () => {
+  // Router hooks
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Location state
   const { location: userLocation, healthIssue } = location.state || {};
-  
-  // Group all state hooks together
+
+  // State hooks grouped together
   const [hospitals, setHospitals] = useState<GroupedHospitals>({
     cityHospitals: [],
     stateHospitals: [],
@@ -38,19 +41,20 @@ const Results = () => {
     maxDistance: 50
   });
 
+  // InView hook
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0.1,
     triggerOnce: false,
   });
 
-  // Group all memoized values together
+  // Memoized values
   const sortedHospitals = useMemo(() => {
     return hospitals.cityHospitals
       .concat(hospitals.stateHospitals)
       .concat(hospitals.otherHospitals)
       .sort((a, b) => {
         if (a.hasData !== b.hasData) return b.hasData ? 1 : -1;
-        return a.score - b.score;
+        return b.score - a.score;
       });
   }, [hospitals]);
 
@@ -59,7 +63,7 @@ const Results = () => {
     [sortedHospitals]
   );
 
-  // Group all callbacks together
+  // Callbacks
   const loadMore = useCallback(() => {
     const start = (page - 1) * HOSPITALS_PER_PAGE;
     const end = page * HOSPITALS_PER_PAGE;
@@ -70,9 +74,11 @@ const Results = () => {
   }, [page, sortedHospitals]);
 
   const handleFilterChange = useCallback(
-    debounce((key: keyof FilterState, value: any) => {
+    (key: keyof FilterState, value: any) => {
       setFilters(prev => ({ ...prev, [key]: value }));
-    }, 150),
+      setPage(1);
+      setDisplayedHospitals([]);
+    },
     []
   );
 
@@ -97,7 +103,7 @@ const Results = () => {
     navigate('/');
   }, [navigate]);
 
-  // Group all effects together
+  // Effects
   useEffect(() => {
     if (inView && !loading && displayedHospitals.length < sortedHospitals.length) {
       loadMore();
@@ -114,6 +120,7 @@ const Results = () => {
         
         if (response) {
           setHospitals(response.hospitals);
+          setDisplayedHospitals(response.hospitals.cityHospitals.slice(0, HOSPITALS_PER_PAGE));
         }
       } catch (err) {
         console.error('Fetch Error:', err);
