@@ -1,3 +1,13 @@
+export interface Location {
+  id: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  county: string;
+  displayString: string;
+}
+
 export interface Hospital {
   id: string;
   name: string;
@@ -5,20 +15,26 @@ export interface Hospital {
   city: string;
   state: string;
   zipCode: string;
-  county: string;
-  score: number;
-  distance?: number;
-  performanceLevel: 'Excellent' | 'Good' | 'Fair' | 'Needs Improvement' | 'Unknown';
-  comparedToNational: string;
-  measureScores?: {
-    mortality: number;
-    safety: number;
-    readmission: number;
-  };
+  description: string;
+  performanceLevel: string;
   ratings: {
-    mortalityRisk: number;
     overall: number;
-    quality: number;
-    safety: number;
+    measure?: number;
+    measureName?: string;
   };
-} 
+  statistics?: {
+    denominator: number;
+    lowerEstimate: number;
+    higherEstimate: number;
+  };
+  hasData: boolean;
+  score: number;
+}
+
+export interface FilterState {
+  location: string;
+  performance: string;
+  sortBy: string;
+  onlyWithData: boolean;
+  maxDistance: number;
+}
