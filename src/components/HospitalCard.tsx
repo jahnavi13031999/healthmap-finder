@@ -9,7 +9,7 @@ interface HospitalCardProps {
 }
 
 export const HospitalCard = memo(({ hospital, className }: HospitalCardProps) => {
-  const rating = hospital.ratings?.overall || 0;
+  const { ratings } = hospital;
 
   return (
     <div className={cn("rounded-lg border border-gray-200 bg-white shadow-sm", className)}>
@@ -21,25 +21,50 @@ export const HospitalCard = memo(({ hospital, className }: HospitalCardProps) =>
           </p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex justify-between items-start">
+          <div className="space-y-2">
+            <div>
+              <p className="text-sm text-gray-500">Overall Rating</p>
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={`overall-${i}`}
+                    className={cn(
+                      "w-4 h-4",
+                      i < Math.floor(ratings.overall || 0) 
+                        ? "text-yellow-400 fill-current" 
+                        : "text-gray-300"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            {ratings.measure && (
+              <div>
+                <p className="text-sm text-gray-500">{ratings.measureName} Rating</p>
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={`measure-${i}`}
+                      className={cn(
+                        "w-4 h-4",
+                        i < Math.floor(ratings.measure) 
+                          ? "text-blue-400 fill-current" 
+                          : "text-gray-300"
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="text-right">
             <p className="text-sm font-medium text-gray-500">Performance</p>
             <p className="text-lg font-bold text-primary">
               {hospital.performanceLevel}
             </p>
-          </div>
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={cn(
-                  "w-4 h-4",
-                  i < Math.floor(rating) 
-                    ? "text-yellow-400 fill-current" 
-                    : "text-gray-300"
-                )}
-              />
-            ))}
           </div>
         </div>
 

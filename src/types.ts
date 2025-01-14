@@ -9,15 +9,21 @@ export interface Hospital {
     hasData: boolean;
     performanceLevel: string;
     description: string;
-    ratings?: {
+    ratings: {
       overall: number | null;
-      quality: number | null;
-      safety: number | null;
+      measure: number | null;
+      measureName: string | null;
     };
-    statistics?: {
+    statistics: {
       denominator: string;
       lowerEstimate: string;
       higherEstimate: string;
       measureName: string;
     };
   }
+
+export interface GroupedHospitals {
+  cityHospitals: Hospital[];
+  stateHospitals: Hospital[];
+  otherHospitals: Hospital[];
+}

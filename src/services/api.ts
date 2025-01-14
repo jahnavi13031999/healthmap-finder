@@ -1,41 +1,16 @@
-import { Hospital } from '@/types';
+import { Hospital, GroupedHospitals } from '@/types';
 export type { Hospital };
 
 // Determine the API base URL based on the environment
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const api = {
-  async searchHospitals(location: string, healthIssue: string): Promise<Hospital[]> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/hospitals/search?location=${encodeURIComponent(location)}&healthIssue=${encodeURIComponent(healthIssue)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          // Remove credentials mode as it's not needed for this public API
-          mode: 'cors'
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch hospitals' }));
-        throw new Error(errorData.error || 'Failed to fetch hospitals');
-      }
-
-      const data = await response.json();
-      
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid response format from server');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error fetching hospitals:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch hospitals');
-    }
+  async searchHospitals(location: string, healthIssue: string): Promise<GroupedHospitals> {
+    const response = await fetch(
+      `${API_BASE_URL}/hospitals/search?location=${encodeURIComponent(location)}&healthIssue=${encodeURIComponent(healthIssue)}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch hospitals');
+    return response.json();
   },
 
   async searchHealthConditions(query: string): Promise<string[]> {
@@ -76,4 +51,15 @@ export const api = {
 };
 
 // Export the searchHospitals function directly
-export const searchHospitals = api.searchHospitals;
+export const searchHospitals = async (
+  location: string, 
+  healthIssue: string, 
+  page: number = 1, 
+  perPage: number = 9
+): Promise<{ hospitals: GroupedHospitals; metadata: { totalPages: number } }> => {
+  const response = await fetch(
+    `${API_BASE_URL}/hospitals/search?location=${encodeURIComponent(location)}&healthIssue=${encodeURIComponent(healthIssue)}&page=${page}&per_page=${perPage}`
+  );
+  if (!response.ok) throw new Error('Failed to fetch hospitals');
+  return response.json();
+};

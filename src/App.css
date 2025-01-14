@@ -40,3 +40,37 @@
 .read-the-docs {
   color: #888;
 }
+/* Add these styles */
+.select-content {
+  @apply bg-white border rounded-md shadow-lg;
+}
+
+.select-item {
+  @apply px-3 py-2 outline-none;
+}
+
+.select-item[data-highlighted] {
+  @apply bg-gray-100;
+}
+
+.select-trigger {
+  @apply h-10 px-3 py-2 inline-flex items-center justify-between rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Optimize animations */
+@layer utilities {
+  .select-content {
+    animation: selectContentShow 0.1s ease-out;
+  }
+  
+  @keyframes selectContentShow {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
