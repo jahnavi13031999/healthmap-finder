@@ -4,6 +4,27 @@ export type { Hospital };
 // Determine the API base URL based on the environment
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+interface PatientRegistration {
+  name: string;
+  email: string;
+  healthIssue: string;
+  location: string;
+}
+
+export const registerPatient = async (data: PatientRegistration): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/patients/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to register patient');
+  }
+}
+
 export const api = {
   async searchHospitals(location: string, healthIssue: string): Promise<GroupedHospitals> {
     const response = await fetch(

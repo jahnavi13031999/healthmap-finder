@@ -25,7 +25,7 @@ interface HospitalMetricsProps {
 
 export function HospitalMetrics({ hospitals }: HospitalMetricsProps) {
   const averageScore = hospitals.reduce((acc, h) => acc + h.score, 0) / hospitals.length;
-  const averageQuality = hospitals.reduce((acc, h) => acc + (h.ratings.quality || 0), 0) / hospitals.length;
+  const averageRating = hospitals.reduce((acc, h) => acc + (h.ratings.overall || 0), 0) / hospitals.length;
 
   const data = {
     labels: ['0-20', '21-40', '41-60', '61-80', '81-100'],
@@ -45,4 +45,4 @@ export function HospitalMetrics({ hospitals }: HospitalMetricsProps) {
       <Bar data={data} />
     </div>
   );
-} 
+}
