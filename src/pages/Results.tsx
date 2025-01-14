@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Hospital } from "@/types";
+import { Hospital, GroupedHospitals, FilterState } from "@/types";
 import { HospitalCard } from "@/components/HospitalCard";
 import { useToast } from "@/components/ui/use-toast";
 import { searchHospitals } from "@/services/api";
@@ -14,23 +14,13 @@ import { debounce } from 'lodash';
 
 const HOSPITALS_PER_PAGE = 9;
 
-interface GroupedHospitals {
-  cityHospitals: Hospital[];
-  stateHospitals: Hospital[];
-  otherHospitals: Hospital[];
-}
-
-interface FilterState {
-  location: string;
-  performance: string;
-  sortBy: string;
-  onlyWithData: boolean;
-  maxDistance: number;
-}
-
 const Results = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { location: userLocation, healthIssue } = location.state || {};
+  
+  // Group all state hooks together
   const [hospitals, setHospitals] = useState<GroupedHospitals>({
     cityHospitals: [],
     stateHospitals: [],
@@ -40,7 +30,6 @@ const Results = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const { toast } = useToast();
   const [filters, setFilters] = useState<FilterState>({
     location: 'all',
     performance: 'all',
@@ -48,13 +37,13 @@ const Results = () => {
     onlyWithData: true,
     maxDistance: 50
   });
-  const navigate = useNavigate();
 
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0.1,
     triggerOnce: false,
   });
 
+  // Group all memoized values together
   const sortedHospitals = useMemo(() => {
     return hospitals.cityHospitals
       .concat(hospitals.stateHospitals)
@@ -65,6 +54,12 @@ const Results = () => {
       });
   }, [hospitals]);
 
+  const totalHospitals = useMemo(() => 
+    sortedHospitals.length,
+    [sortedHospitals]
+  );
+
+  // Group all callbacks together
   const loadMore = useCallback(() => {
     const start = (page - 1) * HOSPITALS_PER_PAGE;
     const end = page * HOSPITALS_PER_PAGE;
@@ -73,39 +68,6 @@ const Results = () => {
     setDisplayedHospitals(prev => [...prev, ...newHospitals]);
     setPage(prev => prev + 1);
   }, [page, sortedHospitals]);
-
-  useEffect(() => {
-    if (inView && !loading && displayedHospitals.length < sortedHospitals.length) {
-      loadMore();
-    }
-  }, [inView, loading, loadMore, displayedHospitals.length, sortedHospitals.length]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!userLocation) return;
-      
-      try {
-        setLoading(true);
-        const response = await searchHospitals(userLocation, healthIssue || '');
-        
-        if (response) {
-          setHospitals(response);
-        }
-      } catch (err) {
-        console.error('Fetch Error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch hospitals');
-        toast({
-          title: "Error",
-          description: "Failed to fetch hospitals. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [userLocation, healthIssue, toast]);
 
   const handleFilterChange = useCallback(
     debounce((key: keyof FilterState, value: any) => {
@@ -131,9 +93,43 @@ const Results = () => {
     });
   }, []);
 
-  const handleNewSearch = () => {
+  const handleNewSearch = useCallback(() => {
     navigate('/');
-  };
+  }, [navigate]);
+
+  // Group all effects together
+  useEffect(() => {
+    if (inView && !loading && displayedHospitals.length < sortedHospitals.length) {
+      loadMore();
+    }
+  }, [inView, loading, loadMore, displayedHospitals.length, sortedHospitals.length]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!userLocation) return;
+      
+      try {
+        setLoading(true);
+        const response = await searchHospitals(userLocation, healthIssue || '');
+        
+        if (response) {
+          setHospitals(response.hospitals);
+        }
+      } catch (err) {
+        console.error('Fetch Error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch hospitals');
+        toast({
+          title: "Error",
+          description: "Failed to fetch hospitals. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userLocation, healthIssue, toast]);
 
   if (loading && !displayedHospitals.length) {
     return <LoadingState />;
@@ -149,11 +145,6 @@ const Results = () => {
       </div>
     );
   }
-
-  const totalHospitals = useMemo(() => 
-    sortedHospitals.length,
-    [sortedHospitals]
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
