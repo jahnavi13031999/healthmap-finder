@@ -27,20 +27,37 @@ export const registerPatient = async (data: PatientRegistration): Promise<void> 
 
 export const searchHospitals = async (
   location: string, 
-  healthIssue: string, 
-  page: number = 1, 
-  perPage: number = 9
-): Promise<{ hospitals: Hospital[]; metadata: { totalPages: number } }> => {
+  healthIssue: string
+): Promise<{ hospitals: Hospital[]; metadata: any }> => {
+  console.log('API Call:', { location, healthIssue }); // Debug log
+
   const params = new URLSearchParams({
-    location: encodeURIComponent(location),
-    healthIssue: encodeURIComponent(healthIssue),
-    page: page.toString(),
-    per_page: perPage.toString()
+    location: location,
+    healthIssue: healthIssue,
+    page: '1',
+    per_page: '50'
   });
 
-  const response = await fetch(`${API_BASE_URL}/hospitals/search?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch hospitals');
-  return response.json();
+  const url = `${API_BASE_URL}/hospitals/search?${params}`;
+  console.log('Request URL:', url); // Debug log
+
+  try {
+    const response = await fetch(url);
+    console.log('Response status:', response.status); // Debug log
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText); // Debug log
+      throw new Error(`API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('API Response data:', data); // Debug log
+    return data;
+  } catch (error) {
+    console.error('API Call Error:', error); // Debug log
+    throw error;
+  }
 };
 
 export const api = {

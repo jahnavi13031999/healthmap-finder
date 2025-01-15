@@ -9,7 +9,10 @@ interface HospitalCardProps {
 }
 
 export const HospitalCard = memo(({ hospital, className }: HospitalCardProps) => {
-  const { ratings } = hospital;
+  // Calculate rating based on score
+  const rating = hospital.hasData 
+    ? Math.max(1, Math.min(5, 5 - (hospital.score / 5))) 
+    : 0;
 
   return (
     <div className={cn("rounded-lg border border-gray-200 bg-white shadow-sm", className)}>
@@ -28,48 +31,25 @@ export const HospitalCard = memo(({ hospital, className }: HospitalCardProps) =>
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <Star
-                    key={`overall-${i}`}
+                    key={i}
                     className={cn(
-                      "w-4 h-4",
-                      i < Math.floor(ratings.overall || 0) 
-                        ? "text-yellow-400 fill-current" 
-                        : "text-gray-300"
+                      "h-4 w-4",
+                      i < rating 
+                        ? "fill-primary text-primary" 
+                        : "fill-gray-200 text-gray-200"
                     )}
                   />
                 ))}
               </div>
             </div>
-            
-            {ratings.measure && (
-              <div>
-                <p className="text-sm text-gray-500">{ratings.measureName} Rating</p>
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={`measure-${i}`}
-                      className={cn(
-                        "w-4 h-4",
-                        i < Math.floor(ratings.measure) 
-                          ? "text-blue-400 fill-current" 
-                          : "text-gray-300"
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="text-right">
             <p className="text-sm font-medium text-gray-500">Performance</p>
             <p className="text-lg font-bold text-primary">
-              {hospital.performanceLevel}
+              {hospital.hasData ? 'Available' : 'No Data'}
             </p>
           </div>
-        </div>
-
-        <div className="text-sm text-gray-600">
-          {hospital.description}
         </div>
 
         {hospital.statistics && (

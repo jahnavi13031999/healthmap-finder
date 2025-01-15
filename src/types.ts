@@ -16,11 +16,8 @@ export interface Hospital {
     county: string;
     score: number;
     hasData: boolean;
-    locationRelevance: 'city' | 'state' | 'other';
-    ratings: Ratings;
-    performanceLevel: string;
-    description: string;
-    statistics: {
+    locationRelevance: string;
+    statistics?: {
       denominator: string;
       lowerEstimate: string;
       higherEstimate: string;

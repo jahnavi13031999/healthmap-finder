@@ -7,6 +7,9 @@ import { searchHospitals } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Search } from 'lucide-react';
 import { LoadingState } from "@/components/results/LoadingState";
+import { FilterBar } from "@/components/results/FilterBar";
+
+const ITEMS_PER_PAGE = 9;
 
 interface GroupedHospitals {
   cityHospitals: Hospital[];
@@ -28,36 +31,48 @@ const Results = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    location: 'all',
+    sortBy: 'score'
+  });
 
+  // Filter and sort hospitals
+  const filteredHospitals = useMemo(() => {
+    const allHospitals = [
+      ...hospitals.cityHospitals,
+      ...hospitals.stateHospitals,
+      ...hospitals.otherHospitals
+    ];
+
+    return allHospitals.filter(hospital => 
+      filters.location === 'all' || 
+      (filters.location === 'city' ? 
+        hospital.locationRelevance === 'city' : 
+        hospital.locationRelevance !== 'city')
+    );
+  }, [hospitals, filters.location]);
+
+  // Sort hospitals
   const sortedHospitals = useMemo(() => {
-    const city = hospitals?.cityHospitals || [];
-    const state = hospitals?.stateHospitals || [];
-    const other = hospitals?.otherHospitals || [];
-    
-    return city
-      .concat(state)
-      .concat(other)
-      .sort((a, b) => {
+    return [...filteredHospitals].sort((a, b) => {
+      if (filters.sortBy === 'score') {
         if (a.hasData !== b.hasData) return b.hasData ? 1 : -1;
-        return a.score - b.score;
-      });
-  }, [hospitals]);
+        return b.score - a.score; // Higher score first
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [filteredHospitals, filters.sortBy]);
 
-  const ErrorMessage = ({ message }: { message: string }) => (
-    <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-      <p className="text-red-500 text-lg font-medium mb-4">
-        {message}
-      </p>
-      <Button 
-        onClick={() => navigate('/')}
-        variant="outline"
-        className="mt-2"
-      >
-        Return to Search
-      </Button>
-    </div>
-  );
+  // Paginate hospitals
+  const paginatedHospitals = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedHospitals.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedHospitals, currentPage]);
 
+  const totalPages = Math.ceil(sortedHospitals.length / ITEMS_PER_PAGE);
+
+  // Fetch hospitals
   useEffect(() => {
     const fetchData = async () => {
       if (!userLocation) {
@@ -69,22 +84,11 @@ const Results = () => {
       try {
         setLoading(true);
         setError(null);
-        console.log('Fetching hospitals for:', userLocation, healthIssue);
         
         const response = await searchHospitals(userLocation, healthIssue || '');
         
-        if (!response) {
-          throw new Error('No response from server');
-        }
-
-        if (!response.hospitals || !Array.isArray(response.hospitals)) {
-          throw new Error('Invalid response format');
-        }
-
-        if (response.hospitals.length === 0) {
-          setError('No hospitals found for your search criteria.');
-          setHospitals({ cityHospitals: [], stateHospitals: [], otherHospitals: [] });
-          return;
+        if (!response?.hospitals) {
+          throw new Error('No hospitals found');
         }
 
         const grouped = {
@@ -94,31 +98,14 @@ const Results = () => {
         };
 
         setHospitals(grouped);
+        setCurrentPage(1); // Reset to first page when new data arrives
 
       } catch (err) {
         console.error('Fetch Error:', err);
-        let errorMessage = 'An unexpected error occurred.';
-        
-        if (err instanceof Error) {
-          switch (err.message) {
-            case 'Failed to fetch':
-              errorMessage = 'Unable to connect to the server. Please check your internet connection.';
-              break;
-            case 'Invalid response format':
-              errorMessage = 'The server returned invalid data. Please try again.';
-              break;
-            case 'No response from server':
-              errorMessage = 'No response received from server. Please try again.';
-              break;
-            default:
-              errorMessage = `Error: ${err.message}`;
-          }
-        }
-
-        setError(errorMessage);
+        setError(err instanceof Error ? err.message : 'Failed to fetch hospitals');
         toast({
           title: "Error",
-          description: errorMessage,
+          description: "Failed to fetch hospitals. Please try again.",
           variant: "destructive",
         });
       } finally {
@@ -127,20 +114,39 @@ const Results = () => {
     };
 
     fetchData();
-  }, [userLocation, healthIssue, toast, navigate]);
+  }, [userLocation, healthIssue, toast]);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle filter reset
+  const handleReset = () => {
+    setFilters({
+      location: 'all',
+      sortBy: 'score'
+    });
+    setCurrentPage(1);
+  };
 
   if (!location.state) {
     return (
-      <ErrorMessage message="No search parameters found. Please start a new search." />
+      <div className="text-center py-12">
+        <p className="text-gray-500 text-lg">Please select a location to search for hospitals.</p>
+        <Button 
+          onClick={() => navigate('/')}
+          className="mt-4"
+        >
+          Return to Search
+        </Button>
+      </div>
     );
   }
 
   if (loading) {
     return <LoadingState />;
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} />;
   }
 
   return (
@@ -150,27 +156,73 @@ const Results = () => {
           <h1 className="text-3xl font-semibold text-gray-900">Search Results</h1>
           <Button 
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+            className="flex items-center gap-2"
           >
             <Search className="h-4 w-4" />
             New Search
           </Button>
         </div>
 
-        <div className="container mx-auto px-4 py-8 space-y-8">
-          {sortedHospitals.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedHospitals.map((hospital) => (
-                <HospitalCard 
-                  key={hospital.id} 
-                  hospital={hospital} 
-                />
-              ))}
-            </div>
-          ) : (
-            <ErrorMessage message="No hospitals found matching your criteria." />
-          )}
-        </div>
+        <FilterBar
+          onSortChange={(value) => {
+            setFilters(prev => ({ ...prev, sortBy: value }));
+            setCurrentPage(1);
+          }}
+          onLocationChange={(value) => {
+            setFilters(prev => ({ ...prev, location: value }));
+            setCurrentPage(1);
+          }}
+          onReset={handleReset}
+        />
+
+        {error ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+            <p className="text-red-500 text-lg">{error}</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {paginatedHospitals.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedHospitals.map((hospital) => (
+                    <HospitalCard 
+                      key={hospital.id} 
+                      hospital={hospital}
+                    />
+                  ))}
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="flex justify-center gap-2 mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <span className="flex items-center px-4">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                <p className="text-gray-500 text-lg">
+                  No hospitals found matching your criteria.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
