@@ -17,6 +17,24 @@ interface GroupedHospitals {
   otherHospitals: Hospital[];
 }
 
+const ResultsSection = ({ title, hospitals }: { title: string; hospitals: Hospital[] }) => {
+  if (hospitals.length === 0) return null;
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+        <span className="text-sm text-gray-500">({hospitals.length} hospitals)</span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {hospitals.map((hospital) => (
+          <HospitalCard key={hospital.id} hospital={hospital} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Results = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -71,6 +89,14 @@ const Results = () => {
   }, [sortedHospitals, currentPage]);
 
   const totalPages = Math.ceil(sortedHospitals.length / ITEMS_PER_PAGE);
+
+  // Separate the filtered hospitals by location
+  const { cityHospitals, otherHospitals } = useMemo(() => {
+    return {
+      cityHospitals: sortedHospitals.filter(h => h.locationRelevance === 'city'),
+      otherHospitals: sortedHospitals.filter(h => h.locationRelevance !== 'city')
+    };
+  }, [sortedHospitals]);
 
   // Fetch hospitals
   useEffect(() => {
@@ -153,7 +179,12 @@ const Results = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900">Search Results</h1>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-gray-900">Search Results</h1>
+            <p className="text-gray-600">
+              Showing results for {userLocation} - {healthIssue}
+            </p>
+          </div>
           <Button 
             onClick={() => navigate('/')}
             className="flex items-center gap-2"
@@ -180,45 +211,43 @@ const Results = () => {
             <p className="text-red-500 text-lg">{error}</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {paginatedHospitals.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {paginatedHospitals.map((hospital) => (
-                    <HospitalCard 
-                      key={hospital.id} 
-                      hospital={hospital}
-                    />
-                  ))}
-                </div>
-                
-                {totalPages > 1 && (
-                  <div className="flex justify-center gap-2 mt-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <span className="flex items-center px-4">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
+          <div className="space-y-12">
+            <ResultsSection 
+              title="Hospitals in Your City" 
+              hospitals={cityHospitals} 
+            />
+            <ResultsSection 
+              title="Other Nearby Hospitals" 
+              hospitals={otherHospitals} 
+            />
+            
+            {sortedHospitals.length === 0 && (
               <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                 <p className="text-gray-500 text-lg">
                   No hospitals found matching your criteria.
                 </p>
+              </div>
+            )}
+            
+            {sortedHospitals.length > 0 && totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="flex items-center px-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
               </div>
             )}
           </div>
