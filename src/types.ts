@@ -1,3 +1,11 @@
+interface Ratings {
+  overall: number | null;
+  quality: number | null;
+  safety: number | null;
+  measure?: number;
+  measureName?: string;
+}
+
 export interface Hospital {
     id: string;
     name: string;
@@ -5,15 +13,13 @@ export interface Hospital {
     city: string;
     state: string;
     zipCode: string;
+    county: string;
     score: number;
     hasData: boolean;
+    locationRelevance: 'city' | 'state' | 'other';
+    ratings: Ratings;
     performanceLevel: string;
     description: string;
-    ratings: {
-      overall: number | null;
-      measure: number | null;
-      measureName: string | null;
-    };
     statistics: {
       denominator: string;
       lowerEstimate: string;
