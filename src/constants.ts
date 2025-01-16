@@ -16,10 +16,3 @@ export interface LocationDetails {
   latitude?: number;
   longitude?: number;
 }
-
-export const US_STATES = [
-  { value: 'AL', label: 'Alabama' },
-  { value: 'AK', label: 'Alaska' },
-  // ... Add all states
-  { value: 'WY', label: 'Wyoming' }
-];
