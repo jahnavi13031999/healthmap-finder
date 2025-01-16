@@ -10,6 +10,7 @@ export interface Hospital {
   distance?: number;
   performanceLevel: 'Excellent' | 'Good' | 'Fair' | 'Needs Improvement' | 'Unknown';
   comparedToNational: string;
+  locationRelevance: 'city' | 'state' | 'other';
   measureScores?: {
     mortality: number;
     safety: number;
@@ -21,4 +22,18 @@ export interface Hospital {
     quality: number;
     safety: number;
   };
-} 
+}
+
+export interface FilterState {
+  location: string;
+  performance: string;
+  sortBy: string;
+  onlyWithData: boolean;
+  maxDistance: number;
+}
+
+export interface GroupedHospitals {
+  cityHospitals: Hospital[];
+  stateHospitals: Hospital[];
+  otherHospitals: Hospital[];
+}

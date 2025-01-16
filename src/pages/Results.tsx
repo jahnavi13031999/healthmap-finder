@@ -1,123 +1,184 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { useLocation } from "react-router-dom";
-import { Hospital } from "@/types";
+import { useEffect, useState, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Hospital, GroupedHospitals } from "@/types";
 import { HospitalCard } from "@/components/HospitalCard";
 import { useToast } from "@/components/ui/use-toast";
 import { searchHospitals } from "@/services/api";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useInView } from "react-intersection-observer";
+import { Button } from "@/components/ui/button";
+import { Search } from 'lucide-react';
+import { FilterBar } from "@/components/FilterBar";
 
-const HOSPITALS_PER_PAGE = 9; // Show 9 hospitals at a time (3x3 grid)
+const ITEMS_PER_PAGE = 9;
+
+const ResultsSection = ({ title, hospitals, description }: { 
+  title: string; 
+  hospitals: Hospital[]; 
+  description?: string;
+}) => {
+  if (hospitals.length === 0) return null;
+  
+  return (
+    <div className="space-y-4 bg-white p-6 rounded-lg shadow-sm">
+      <div className="border-b pb-4">
+        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+        {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+        <span className="text-sm text-gray-500 mt-2 block">
+          {hospitals.length} {hospitals.length === 1 ? 'hospital' : 'hospitals'} found
+        </span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        {hospitals.map((hospital) => (
+          <HospitalCard key={hospital.id} hospital={hospital} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const Results = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const { location: userLocation, healthIssue } = location.state || {};
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [displayedHospitals, setDisplayedHospitals] = useState<Hospital[]>([]);
+
+  const [hospitals, setHospitals] = useState<GroupedHospitals>({
+    cityHospitals: [],
+    stateHospitals: [],
+    otherHospitals: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const { toast } = useToast();
-
-  // Setup intersection observer for infinite scroll
-  const { ref: loadMoreRef, inView } = useInView({
-    threshold: 0.1,
-    triggerOnce: false,
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    location: 'all',
+    sortBy: 'score'
   });
 
-  // Memoize sorted hospitals
+  // Filter and sort hospitals
+  const filteredHospitals = useMemo(() => {
+    const allHospitals = [
+      ...hospitals.cityHospitals,
+      ...hospitals.stateHospitals,
+      ...hospitals.otherHospitals
+    ];
+
+    return allHospitals.filter(hospital => 
+      filters.location === 'all' || 
+      (filters.location === 'city' ? 
+        hospital.locationRelevance === 'city' : 
+        hospital.locationRelevance !== 'city')
+    );
+  }, [hospitals, filters.location]);
+
+  // Sort hospitals
   const sortedHospitals = useMemo(() => {
-    return hospitals.sort((a, b) => {
-      if (a.hasData !== b.hasData) return b.hasData ? 1 : -1;
-      return a.score - b.score;
+    return [...filteredHospitals].sort((a, b) => {
+      if (filters.sortBy === 'score') {
+        if (a.hasData !== b.hasData) return b.hasData ? 1 : -1;
+        return b.score - a.score; // Higher score first
+      }
+      return a.name.localeCompare(b.name);
     });
-  }, [hospitals]);
+  }, [filteredHospitals, filters.sortBy]);
 
-  // Load more hospitals when scrolling
-  const loadMore = useCallback(() => {
-    const start = (page - 1) * HOSPITALS_PER_PAGE;
-    const end = page * HOSPITALS_PER_PAGE;
-    const newHospitals = sortedHospitals.slice(start, end);
-    
-    setDisplayedHospitals(prev => [...prev, ...newHospitals]);
-    setPage(prev => prev + 1);
-  }, [page, sortedHospitals]);
+  // Paginate hospitals
+  const paginatedHospitals = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedHospitals.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedHospitals, currentPage]);
 
-  // Watch for scroll and load more
+  const totalPages = Math.ceil(sortedHospitals.length / ITEMS_PER_PAGE);
+
+  // Separate the filtered hospitals by location
+  const { cityHospitals, otherHospitals } = useMemo(() => {
+    return {
+      cityHospitals: sortedHospitals.filter(h => h.locationRelevance === 'city'),
+      otherHospitals: sortedHospitals.filter(h => h.locationRelevance !== 'city')
+    };
+  }, [sortedHospitals]);
+
+  // Fetch hospitals
   useEffect(() => {
-    if (inView && !loading && displayedHospitals.length < sortedHospitals.length) {
-      loadMore();
-    }
-  }, [inView, loading, loadMore, displayedHospitals.length, sortedHospitals.length]);
-
-  // Initial data fetch
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchHospitals = async () => {
+    const fetchData = async () => {
       if (!userLocation) {
-        setError("Location is required");
+        setError('Please select a location to search for hospitals.');
         setLoading(false);
         return;
       }
-
+      
       try {
         setLoading(true);
         setError(null);
-        const results = await searchHospitals(userLocation, healthIssue || '');
-        if (mounted) {
-          setHospitals(results);
-          // Initialize with first page
-          setDisplayedHospitals(results.slice(0, HOSPITALS_PER_PAGE));
-          setPage(2);
-        }
-      } catch (error) {
-        if (mounted) {
-          const errorMessage = error instanceof Error ? error.message : "Failed to fetch hospital recommendations";
-          setError(errorMessage);
-          toast({
-            title: "Error",
-            description: errorMessage,
-            variant: "destructive",
-          });
-        }
+        
+        const response = await searchHospitals(userLocation, healthIssue || '');
+        
+        const grouped = {
+          cityHospitals: response.filter(h => h.city.toLowerCase() === userLocation.toLowerCase()),
+          stateHospitals: response.filter(h => 
+            h.state.toLowerCase() === userLocation.toLowerCase() && 
+            h.city.toLowerCase() !== userLocation.toLowerCase()
+          ),
+          otherHospitals: response.filter(h => 
+            h.state.toLowerCase() !== userLocation.toLowerCase() && 
+            h.city.toLowerCase() !== userLocation.toLowerCase()
+          )
+        };
+
+        setHospitals(grouped);
+        setCurrentPage(1);
+
+      } catch (err) {
+        console.error('Fetch Error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch hospitals');
+        toast({
+          title: "Error",
+          description: "Failed to fetch hospitals. Please try again.",
+          variant: "destructive",
+        });
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    fetchHospitals();
-    return () => {
-      mounted = false;
-    };
+    fetchData();
   }, [userLocation, healthIssue, toast]);
 
-  if (loading && !displayedHospitals.length) {
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle filter reset
+  const handleReset = () => {
+    setFilters({
+      location: 'all',
+      sortBy: 'score'
+    });
+    setCurrentPage(1);
+  };
+
+  if (!location.state) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="container mx-auto">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-              {[...Array(HOSPITALS_PER_PAGE)].map((_, i) => (
-                <Skeleton key={i} className="h-64 rounded-lg" />
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="text-center py-12">
+        <p className="text-gray-500 text-lg">Please select a location to search for hospitals.</p>
+        <Button 
+          onClick={() => navigate('/')}
+          className="mt-4"
+        >
+          Return to Search
+        </Button>
       </div>
     );
   }
 
-  if (error) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-red-600 mb-2">Error</h2>
-          <p className="text-gray-600">{error}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading hospitals...</p>
         </div>
       </div>
     );
@@ -126,35 +187,69 @@ const Results = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-semibold text-textPrimary mb-2">
-          Recommended Hospitals
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Based on mortality rates{healthIssue ? ` for ${healthIssue}` : ''} 
-          {userLocation ? ` in ${userLocation}` : ''}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedHospitals.map((hospital) => (
-            <HospitalCard 
-              key={hospital.id} 
-              hospital={hospital}
-            />
-          ))}
+        <div className="flex justify-between items-center mb-8">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-gray-900">Hospital Search Results</h1>
+            <p className="text-gray-600">
+              Showing results for {userLocation}
+              {healthIssue && <span> - {healthIssue}</span>}
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2"
+          >
+            <Search className="h-4 w-4" />
+            New Search
+          </Button>
         </div>
-        
-        {/* Loading indicator */}
-        {displayedHospitals.length < sortedHospitals.length && (
-          <div ref={loadMoreRef} className="mt-8 text-center">
-            <div className="animate-pulse text-gray-500">
-              Loading more hospitals...
-            </div>
+
+        <FilterBar
+          onSortChange={(value) => {
+            setFilters(prev => ({ ...prev, sortBy: value }));
+            setCurrentPage(1);
+          }}
+          onLocationChange={(value) => {
+            setFilters(prev => ({ ...prev, location: value }));
+            setCurrentPage(1);
+          }}
+          onReset={() => {
+            setFilters({ location: 'all', sortBy: 'score' });
+            setCurrentPage(1);
+          }}
+        />
+
+        {error ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+            <p className="text-red-500 text-lg">{error}</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <ResultsSection 
+              title="Hospitals in Your City" 
+              description="These hospitals are located within your specified city"
+              hospitals={hospitals.cityHospitals} 
+            />
+            <ResultsSection 
+              title="Hospitals in Your State" 
+              description="These hospitals are in your state but outside your city"
+              hospitals={hospitals.stateHospitals} 
+            />
+            <ResultsSection 
+              title="Other Nearby Hospitals" 
+              description="These hospitals are outside your state but may be relevant"
+              hospitals={hospitals.otherHospitals} 
+            />
+            
+            {Object.values(hospitals).every(arr => arr.length === 0) && (
+              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                <p className="text-gray-500 text-lg">
+                  No hospitals found matching your criteria.
+                </p>
+              </div>
+            )}
           </div>
         )}
-        
-        {/* Results count */}
-        <div className="mt-8 text-center text-gray-500">
-          Showing {displayedHospitals.length} of {sortedHospitals.length} hospitals
-        </div>
       </div>
     </div>
   );
