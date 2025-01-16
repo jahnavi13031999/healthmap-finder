@@ -1,8 +1,9 @@
 import { Hospital } from '@/types';
 export type { Hospital };
 
-// Determine the API base URL based on the environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.MODE === 'development' 
+  ? import.meta.env.VITE_DEV_API_URL 
+  : import.meta.env.VITE_API_URL;
 
 export const api = {
   async searchHospitals(location: string, healthIssue: string): Promise<Hospital[]> {
@@ -15,7 +16,6 @@ export const api = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          // Remove credentials mode as it's not needed for this public API
           mode: 'cors'
         }
       );
@@ -75,5 +75,4 @@ export const api = {
   },
 };
 
-// Export the searchHospitals function directly
 export const searchHospitals = api.searchHospitals;
