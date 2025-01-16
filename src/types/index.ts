@@ -5,22 +5,21 @@ export interface Hospital {
   city: string;
   state: string;
   zipCode: string;
-  county: string;
   score: number;
-  distance?: number;
-  performanceLevel: 'Excellent' | 'Good' | 'Fair' | 'Needs Improvement' | 'Unknown';
-  comparedToNational: string;
+  hasData: boolean;
+  performanceLevel: string;
+  description: string;
   locationRelevance: 'city' | 'state' | 'other';
-  measureScores?: {
-    mortality: number;
-    safety: number;
-    readmission: number;
+  ratings?: {
+    overall: number | null;
+    quality: number | null;
+    safety: number | null;
   };
-  ratings: {
-    mortalityRisk: number;
-    overall: number;
-    quality: number;
-    safety: number;
+  statistics?: {
+    denominator: string;
+    lowerEstimate: string;
+    higherEstimate: string;
+    measureName: string;
   };
 }
 
