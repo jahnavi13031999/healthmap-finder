@@ -10,20 +10,29 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { SlidersHorizontal, X } from "lucide-react";
+import { FilterState } from "@/types";
 
 interface FilterBarProps {
   onSortChange: (value: string) => void;
   onLocationChange: (value: string) => void;
   onReset: () => void;
-  currentFilters: {
-    location: string;
-    sortBy: string;
-    maxDistance: number;
-    onlyWithData: boolean;
-  };
+  currentFilters: FilterState;
 }
 
-export const FilterBar = ({ onSortChange, onLocationChange, onReset, currentFilters }: FilterBarProps) => {
+export const FilterBar = ({ 
+  onSortChange, 
+  onLocationChange, 
+  onReset, 
+  currentFilters 
+}: FilterBarProps) => {
+  // Ensure currentFilters has default values if undefined
+  const filters = {
+    location: currentFilters?.location || 'all',
+    sortBy: currentFilters?.sortBy || 'score',
+    maxDistance: currentFilters?.maxDistance || 50,
+    onlyWithData: currentFilters?.onlyWithData || false,
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-lg mb-6 overflow-hidden">
       <div className="p-4 border-b border-gray-100">
@@ -37,7 +46,7 @@ export const FilterBar = ({ onSortChange, onLocationChange, onReset, currentFilt
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Location</label>
-            <Select value={currentFilters.location} onValueChange={onLocationChange}>
+            <Select value={filters.location} onValueChange={onLocationChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
@@ -51,7 +60,7 @@ export const FilterBar = ({ onSortChange, onLocationChange, onReset, currentFilt
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Sort by</label>
-            <Select value={currentFilters.sortBy} onValueChange={onSortChange}>
+            <Select value={filters.sortBy} onValueChange={onSortChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -66,7 +75,7 @@ export const FilterBar = ({ onSortChange, onLocationChange, onReset, currentFilt
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Maximum Distance</label>
             <Slider
-              value={[currentFilters.maxDistance]}
+              value={[filters.maxDistance]}
               onValueChange={([value]) => onLocationChange(String(value))}
               max={100}
               step={1}
@@ -78,7 +87,7 @@ export const FilterBar = ({ onSortChange, onLocationChange, onReset, currentFilt
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="flex gap-2">
             <Switch
-              checked={currentFilters.onlyWithData}
+              checked={filters.onlyWithData}
               onCheckedChange={(checked) => onLocationChange(checked ? 'withData' : 'all')}
             />
             <label className="text-sm text-gray-600">Only show hospitals with available data</label>
@@ -97,13 +106,13 @@ export const FilterBar = ({ onSortChange, onLocationChange, onReset, currentFilt
 
       {/* Active Filters */}
       <div className="px-6 pb-4 flex flex-wrap gap-2">
-        {currentFilters.location !== 'all' && (
+        {filters.location !== 'all' && (
           <Badge variant="secondary" className="flex items-center gap-1">
-            {currentFilters.location === 'city' ? 'Within City' : 'Outside City'}
+            {filters.location === 'city' ? 'Within City' : 'Outside City'}
             <X className="h-3 w-3 cursor-pointer" onClick={() => onLocationChange('all')} />
           </Badge>
         )}
-        {currentFilters.onlyWithData && (
+        {filters.onlyWithData && (
           <Badge variant="secondary" className="flex items-center gap-1">
             With Data Only
             <X className="h-3 w-3 cursor-pointer" onClick={() => onLocationChange('all')} />

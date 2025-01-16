@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Hospital, GroupedHospitals } from "@/types";
+import { Hospital, GroupedHospitals, FilterState } from "@/types";
 import { HospitalCard } from "@/components/HospitalCard";
 import { useToast } from "@/components/ui/use-toast";
 import { searchHospitals } from "@/services/api";
@@ -50,9 +50,12 @@ const Results = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FilterState>({
     location: 'all',
-    sortBy: 'score'
+    performance: 'all',
+    sortBy: 'score',
+    onlyWithData: false,
+    maxDistance: 50
   });
 
   // Filter and sort hospitals
@@ -154,7 +157,10 @@ const Results = () => {
   const handleReset = () => {
     setFilters({
       location: 'all',
-      sortBy: 'score'
+      performance: 'all',
+      sortBy: 'score',
+      onlyWithData: false,
+      maxDistance: 50
     });
     setCurrentPage(1);
   };
@@ -213,10 +219,8 @@ const Results = () => {
             setFilters(prev => ({ ...prev, location: value }));
             setCurrentPage(1);
           }}
-          onReset={() => {
-            setFilters({ location: 'all', sortBy: 'score' });
-            setCurrentPage(1);
-          }}
+          onReset={handleReset}
+          currentFilters={filters}
         />
 
         {error ? (
