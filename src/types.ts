@@ -9,6 +9,7 @@ export interface Hospital {
     hasData: boolean;
     performanceLevel: string;
     description: string;
+    locationRelevance: 'city' | 'state' | 'other';
     ratings?: {
       overall: number | null;
       quality: number | null;
@@ -20,4 +21,24 @@ export interface Hospital {
       higherEstimate: string;
       measureName: string;
     };
-  }
+}
+
+export interface FilterState {
+    location: string;
+    performance: string;
+    sortBy: string;
+    onlyWithData: boolean;
+    maxDistance: number;
+}
+
+export interface GroupedHospitals {
+    cityHospitals: Hospital[];
+    stateHospitals: Hospital[];
+    otherHospitals: Hospital[];
+}
+
+export interface PaginationState {
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+}

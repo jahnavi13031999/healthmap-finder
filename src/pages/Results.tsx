@@ -1,39 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Hospital, GroupedHospitals, FilterState } from "@/types";
-import { HospitalCard } from "@/components/HospitalCard";
 import { useToast } from "@/components/ui/use-toast";
-import { searchHospitals } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Search } from 'lucide-react';
 import { FilterBar } from "@/components/FilterBar";
-
-const ITEMS_PER_PAGE = 9;
-
-const ResultsSection = ({ title, hospitals, description }: { 
-  title: string; 
-  hospitals: Hospital[]; 
-  description?: string;
-}) => {
-  if (hospitals.length === 0) return null;
-  
-  return (
-    <div className="space-y-4 bg-white p-6 rounded-lg shadow-sm">
-      <div className="border-b pb-4">
-        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-        {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-        <span className="text-sm text-gray-500 mt-2 block">
-          {hospitals.length} {hospitals.length === 1 ? 'hospital' : 'hospitals'} found
-        </span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-        {hospitals.map((hospital) => (
-          <HospitalCard key={hospital.id} hospital={hospital} />
-        ))}
-      </div>
-    </div>
-  );
-};
+import { HospitalSection } from "@/components/HospitalSection";
+import { searchHospitals } from "@/services/api";
 
 const Results = () => {
   const location = useLocation();
@@ -49,7 +22,6 @@ const Results = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<FilterState>({
     location: 'all',
     performance: 'all',
@@ -60,46 +32,36 @@ const Results = () => {
 
   // Filter and sort hospitals
   const filteredHospitals = useMemo(() => {
-    const allHospitals = [
-      ...hospitals.cityHospitals,
-      ...hospitals.stateHospitals,
-      ...hospitals.otherHospitals
-    ];
+    const allHospitals = {
+      cityHospitals: hospitals.cityHospitals.filter(hospital => 
+        filters.location === 'all' || 
+        (filters.location === 'city' && hospital.locationRelevance === 'city')
+      ),
+      stateHospitals: hospitals.stateHospitals.filter(hospital =>
+        filters.location === 'all' ||
+        (filters.location !== 'city' && hospital.locationRelevance === 'state')
+      ),
+      otherHospitals: hospitals.otherHospitals.filter(hospital =>
+        filters.location === 'all' ||
+        (filters.location !== 'city' && hospital.locationRelevance === 'other')
+      )
+    };
 
-    return allHospitals.filter(hospital => 
-      filters.location === 'all' || 
-      (filters.location === 'city' ? 
-        hospital.locationRelevance === 'city' : 
-        hospital.locationRelevance !== 'city')
-    );
-  }, [hospitals, filters.location]);
-
-  // Sort hospitals
-  const sortedHospitals = useMemo(() => {
-    return [...filteredHospitals].sort((a, b) => {
+    // Apply sorting
+    const sortFn = (a: Hospital, b: Hospital) => {
       if (filters.sortBy === 'score') {
         if (a.hasData !== b.hasData) return b.hasData ? 1 : -1;
-        return b.score - a.score; // Higher score first
+        return b.score - a.score;
       }
       return a.name.localeCompare(b.name);
-    });
-  }, [filteredHospitals, filters.sortBy]);
-
-  // Paginate hospitals
-  const paginatedHospitals = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return sortedHospitals.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [sortedHospitals, currentPage]);
-
-  const totalPages = Math.ceil(sortedHospitals.length / ITEMS_PER_PAGE);
-
-  // Separate the filtered hospitals by location
-  const { cityHospitals, otherHospitals } = useMemo(() => {
-    return {
-      cityHospitals: sortedHospitals.filter(h => h.locationRelevance === 'city'),
-      otherHospitals: sortedHospitals.filter(h => h.locationRelevance !== 'city')
     };
-  }, [sortedHospitals]);
+
+    return {
+      cityHospitals: [...allHospitals.cityHospitals].sort(sortFn),
+      stateHospitals: [...allHospitals.stateHospitals].sort(sortFn),
+      otherHospitals: [...allHospitals.otherHospitals].sort(sortFn)
+    };
+  }, [hospitals, filters]);
 
   // Fetch hospitals
   useEffect(() => {
@@ -129,8 +91,6 @@ const Results = () => {
         };
 
         setHospitals(grouped);
-        setCurrentPage(1);
-
       } catch (err) {
         console.error('Fetch Error:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch hospitals');
@@ -147,12 +107,6 @@ const Results = () => {
     fetchData();
   }, [userLocation, healthIssue, toast]);
 
-  // Handle page change
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   // Handle filter reset
   const handleReset = () => {
     setFilters({
@@ -162,7 +116,6 @@ const Results = () => {
       onlyWithData: false,
       maxDistance: 50
     });
-    setCurrentPage(1);
   };
 
   if (!location.state) {
@@ -211,14 +164,8 @@ const Results = () => {
         </div>
 
         <FilterBar
-          onSortChange={(value) => {
-            setFilters(prev => ({ ...prev, sortBy: value }));
-            setCurrentPage(1);
-          }}
-          onLocationChange={(value) => {
-            setFilters(prev => ({ ...prev, location: value }));
-            setCurrentPage(1);
-          }}
+          onSortChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
+          onLocationChange={(value) => setFilters(prev => ({ ...prev, location: value }))}
           onReset={handleReset}
           currentFilters={filters}
         />
@@ -229,23 +176,23 @@ const Results = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            <ResultsSection 
+            <HospitalSection 
               title="Hospitals in Your City" 
               description="These hospitals are located within your specified city"
-              hospitals={hospitals.cityHospitals} 
+              hospitals={filteredHospitals.cityHospitals}
             />
-            <ResultsSection 
+            <HospitalSection 
               title="Hospitals in Your State" 
               description="These hospitals are in your state but outside your city"
-              hospitals={hospitals.stateHospitals} 
+              hospitals={filteredHospitals.stateHospitals}
             />
-            <ResultsSection 
+            <HospitalSection 
               title="Other Nearby Hospitals" 
               description="These hospitals are outside your state but may be relevant"
-              hospitals={hospitals.otherHospitals} 
+              hospitals={filteredHospitals.otherHospitals}
             />
             
-            {Object.values(hospitals).every(arr => arr.length === 0) && (
+            {Object.values(filteredHospitals).every(arr => arr.length === 0) && (
               <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                 <p className="text-gray-500 text-lg">
                   No hospitals found matching your criteria.
